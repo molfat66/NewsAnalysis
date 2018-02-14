@@ -88,7 +88,7 @@ def scrapeSites() -> None:
                 except:
                     pass
 
-def constructDict(wordDocDict=None,wordRow=None,build=False):
+def constructDict(wordDocDict=None,wordRow=None,build=False,myfile=None):
     warnings.filterwarnings('ignore', category=UserWarning, append=True)
     substitute = namedtuple('substitute', 'old new')
     site = namedtuple('site','url city state')
@@ -161,7 +161,7 @@ def constructDict(wordDocDict=None,wordRow=None,build=False):
                     if exitFlag or not enoughCharge(overRide=True): raise KeyboardInterrupt
                     scrapedSiteWriter.writerow([site.url])
                 except KeyboardInterrupt:
-                    print('\nBroke loop at '+paper.brand)
+                    communicate('\nBroke loop at '+paper.brand,myfile)
                     break
                 if (datetime.now()-time).seconds>2*60*60 or not enoughCharge() or not isConnected(): break
     wordRow = {word: i for (i,word) in enumerate(wordSet)}
@@ -189,19 +189,24 @@ def clearDupes(wordDocDict: dict) -> dict:
     [wordDocDict.pop(url) for url in lose]
     return wordDocDict
     
+def communicate(msg,myfile=None):
+    if myfile is not None: myfile.write('\n'+msg)
+    else: print(msg)
+
 if __name__ == '__main__':
-    print(datetime.today())
-    if enoughCharge(overRide=False):
-        if isConnected():
-            wordDocDict = loadDict()
-            wordRow = loadWordRow()
-            wordDocDict, wordRow = constructDict(wordDocDict,wordRow,build=True)
-            wordDocDict = clearDupes(wordDocDict)
-            saveDict(wordDocDict)
-            saveWordRow(wordRow)
+    with open('log.txt','a') as myfile:
+        communicate(str(datetime.now()),myfile)
+        if enoughCharge(overRide=False):
+            if isConnected():
+                wordDocDict = loadDict()
+                wordRow = loadWordRow()
+                wordDocDict, wordRow = constructDict(wordDocDict,wordRow,build=False,myfile=myfile)
+                wordDocDict = clearDupes(wordDocDict)
+                saveDict(wordDocDict)
+                saveWordRow(wordRow)
+            else:
+                communicate('No internet connection',myfile)
         else:
-            print('No internet connection')
-    else:
-        print('Not enough battery capacity')
+            communicate('Not enough battery capacity',myfile)
+        communicate(str(datetime.now()),myfile)
     winsound.PlaySound("SystemExit",winsound.SND_ALIAS)
-    print(datetime.today())
